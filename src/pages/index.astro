@@ -1,5 +1,20 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import {
+	Clock3,
+	Gauge,
+	Mic,
+	Pause,
+	Play,
+	RotateCcw,
+	Save,
+	Scissors,
+	Square,
+	Trash2,
+	Upload,
+	Volume2,
+	X,
+} from '@lucide/astro';
 ---
 
 <Layout title="Bingo Bango">
@@ -124,15 +139,22 @@ import Layout from '../layouts/Layout.astro';
 						<p id="bingo-sound-status" class="mt-1 truncate text-sm font-semibold text-slate-500"></p>
 						<input id="bingo-sound-input" class="sr-only" type="file" accept="audio/*" />
 						<p id="bingo-sound-error" class="mt-2 hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"></p>
-						<div class="mt-3 grid gap-2 sm:grid-cols-3">
+						<div class="mt-3 grid grid-cols-2 gap-2">
 							<label class="bingo-button bingo-button-secondary cursor-pointer" for="bingo-sound-input">
-								Cargar
+								<Upload size={16} aria-hidden="true" />
+								<span>Cargar</span>
 							</label>
+							<button id="open-sound-studio" class="bingo-button bingo-button-secondary" type="button">
+								<Mic size={16} aria-hidden="true" />
+								<span>Crear</span>
+							</button>
 							<button id="test-bingo-sound" class="bingo-button bingo-button-secondary" type="button">
-								Probar
+								<Volume2 size={16} aria-hidden="true" />
+								<span>Probar</span>
 							</button>
 							<button id="remove-bingo-sound" class="bingo-button bingo-button-danger" type="button">
-								Quitar
+								<Trash2 size={16} aria-hidden="true" />
+								<span>Quitar</span>
 							</button>
 						</div>
 					</div>
@@ -190,6 +212,98 @@ import Layout from '../layouts/Layout.astro';
 			<div class="mt-5 grid gap-2 sm:grid-cols-2">
 				<button id="cancel-custom-pattern" class="bingo-button bingo-button-secondary" type="button">Cancelar</button>
 				<button id="save-custom-pattern" class="bingo-button bingo-button-primary" type="button">Guardar figura</button>
+			</div>
+		</section>
+	</div>
+
+	<div id="sound-studio-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center p-4">
+		<button class="absolute inset-0 bg-slate-950/50" type="button" data-close-sound-studio aria-label="Cerrar"></button>
+		<section class="relative w-full max-w-2xl rounded-lg border border-slate-200 bg-white p-5 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="sound-studio-title">
+			<div class="mb-4 flex items-center justify-between gap-3">
+				<h2 id="sound-studio-title" class="text-xl font-black text-slate-950">Crear sonido de Bingo</h2>
+				<button class="bingo-button bingo-button-secondary size-9 px-0" type="button" data-close-sound-studio aria-label="Cerrar">
+					<X size={18} aria-hidden="true" />
+				</button>
+			</div>
+
+			<div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+				<div class="flex items-start justify-between gap-4">
+					<div class="min-w-0">
+						<p id="sound-studio-status" class="text-sm font-black text-slate-800"></p>
+						<p id="sound-studio-detail" class="mt-1 text-sm font-semibold text-slate-500"></p>
+					</div>
+					<span id="studio-time-label" class="shrink-0 rounded-md bg-white px-3 py-1 text-sm font-black text-slate-700 shadow-sm">0.0s</span>
+				</div>
+
+				<div class="mt-4 rounded-md border border-slate-200 bg-white p-3">
+					<canvas id="sound-waveform" class="h-28 w-full" width="720" height="160"></canvas>
+					<input id="studio-timeline" class="sound-range mt-3" type="range" min="0" max="0" step="0.05" value="0" disabled />
+				</div>
+
+				<div class="mt-4 grid gap-2 sm:grid-cols-4">
+					<button id="start-recording" class="sound-tool-button is-primary" type="button">
+						<Mic size={18} aria-hidden="true" />
+						<span>Grabar</span>
+					</button>
+					<button id="stop-recording" class="sound-tool-button" type="button">
+						<Square size={18} aria-hidden="true" />
+						<span>Detener</span>
+					</button>
+					<button id="play-recording" class="sound-tool-button" type="button">
+						<Play id="play-recording-icon" size={18} aria-hidden="true" />
+						<Pause id="pause-recording-icon" class="hidden" size={18} aria-hidden="true" />
+						<span id="play-recording-label">Reproducir</span>
+					</button>
+					<button id="reset-recording" class="sound-tool-button is-danger" type="button">
+						<RotateCcw size={18} aria-hidden="true" />
+						<span>Reiniciar</span>
+					</button>
+				</div>
+			</div>
+
+			<div class="mt-5 space-y-4">
+				<label class="space-y-2">
+					<div class="flex items-center justify-between gap-3">
+						<span class="inline-flex items-center gap-2 text-sm font-black text-slate-800">
+							<Scissors size={16} aria-hidden="true" />
+							Inicio
+						</span>
+						<span id="trim-start-label" class="text-sm font-semibold text-slate-500">0.0s</span>
+					</div>
+					<input id="trim-start" class="sound-range" type="range" min="0" max="0" step="0.05" value="0" disabled />
+				</label>
+
+				<label class="space-y-2">
+					<div class="flex items-center justify-between gap-3">
+						<span class="inline-flex items-center gap-2 text-sm font-black text-slate-800">
+							<Clock3 size={16} aria-hidden="true" />
+							Fin
+						</span>
+						<span id="trim-end-label" class="text-sm font-semibold text-slate-500">0.0s</span>
+					</div>
+					<input id="trim-end" class="sound-range" type="range" min="0" max="0" step="0.05" value="0" disabled />
+				</label>
+
+				<label class="space-y-2">
+					<div class="flex items-center justify-between gap-3">
+						<span class="inline-flex items-center gap-2 text-sm font-black text-slate-800">
+							<Gauge size={16} aria-hidden="true" />
+							Velocidad
+						</span>
+						<span id="sound-speed-label" class="text-sm font-semibold text-slate-500">1.00x</span>
+					</div>
+					<input id="sound-speed" class="sound-range" type="range" min="0.5" max="1.8" step="0.05" value="1" disabled />
+				</label>
+			</div>
+
+			<p id="sound-studio-error" class="mt-4 hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"></p>
+
+			<div class="mt-5 grid gap-2 sm:grid-cols-2">
+				<button id="cancel-sound-studio" class="bingo-button bingo-button-secondary" type="button">Cancelar</button>
+				<button id="save-sound-studio" class="bingo-button bingo-button-primary" type="button">
+					<Save size={16} aria-hidden="true" />
+					<span>Guardar sonido</span>
+				</button>
 			</div>
 		</section>
 	</div>
@@ -293,6 +407,7 @@ import Layout from '../layouts/Layout.astro';
 		const bingoSoundInput = document.querySelector('#bingo-sound-input');
 		const bingoSoundStatus = document.querySelector('#bingo-sound-status');
 		const bingoSoundError = document.querySelector('#bingo-sound-error');
+		const openSoundStudioButton = document.querySelector('#open-sound-studio');
 		const testBingoSoundButton = document.querySelector('#test-bingo-sound');
 		const removeBingoSoundButton = document.querySelector('#remove-bingo-sound');
 		const customPatternModal = document.querySelector('#custom-pattern-modal');
@@ -301,12 +416,50 @@ import Layout from '../layouts/Layout.astro';
 		const customPatternError = document.querySelector('#custom-pattern-error');
 		const cancelCustomPatternButton = document.querySelector('#cancel-custom-pattern');
 		const saveCustomPatternButton = document.querySelector('#save-custom-pattern');
+		const soundStudioModal = document.querySelector('#sound-studio-modal');
+		const soundStudioStatus = document.querySelector('#sound-studio-status');
+		const soundStudioDetail = document.querySelector('#sound-studio-detail');
+		const soundStudioError = document.querySelector('#sound-studio-error');
+		const soundWaveformCanvas = document.querySelector('#sound-waveform');
+		const studioTimelineInput = document.querySelector('#studio-timeline');
+		const studioTimeLabel = document.querySelector('#studio-time-label');
+		const startRecordingButton = document.querySelector('#start-recording');
+		const stopRecordingButton = document.querySelector('#stop-recording');
+		const playRecordingButton = document.querySelector('#play-recording');
+		const playRecordingIcon = document.querySelector('#play-recording-icon');
+		const pauseRecordingIcon = document.querySelector('#pause-recording-icon');
+		const playRecordingLabel = document.querySelector('#play-recording-label');
+		const resetRecordingButton = document.querySelector('#reset-recording');
+		const trimStartInput = document.querySelector('#trim-start');
+		const trimEndInput = document.querySelector('#trim-end');
+		const trimStartLabel = document.querySelector('#trim-start-label');
+		const trimEndLabel = document.querySelector('#trim-end-label');
+		const soundSpeedInput = document.querySelector('#sound-speed');
+		const soundSpeedLabel = document.querySelector('#sound-speed-label');
+		const cancelSoundStudioButton = document.querySelector('#cancel-sound-studio');
+		const saveSoundStudioButton = document.querySelector('#save-sound-studio');
 
 		let editingCardId = null;
 		let state = loadState();
 		let hasRendered = false;
 		let previousWinningKeys = new Set();
 		let customPatternDraft = [];
+		let studioRecorder = null;
+		let studioStream = null;
+		let studioChunks = [];
+		let studioDraft = null;
+		let studioAudioContext = null;
+		let studioAudioSource = null;
+		let studioWaveformBuffer = null;
+		let studioAnalyser = null;
+		let studioMeterSource = null;
+		let studioMeterAnimation = null;
+		let studioPlaybackAnimation = null;
+		let studioIsProcessing = false;
+		let studioRecordingStartedAt = 0;
+		let studioPlaybackStartedAt = 0;
+		let studioPlaybackStart = 0;
+		let studioPlaybackDuration = 0;
 
 		function loadState() {
 			try {
@@ -352,7 +505,31 @@ import Layout from '../layouts/Layout.astro';
 			const name = String(sound.name ?? '').trim();
 			const dataUrl = String(sound.dataUrl ?? '');
 			if (!name || !dataUrl.startsWith('data:audio/')) return null;
-			return { name, dataUrl };
+
+			const normalized = {
+				name,
+				dataUrl,
+				kind: sound.kind === 'recorded' ? 'recorded' : 'file',
+			};
+			const duration = Number(sound.duration);
+			const trimStart = Number(sound.trimStart);
+			const trimEnd = Number(sound.trimEnd);
+			const playbackRate = Number(sound.playbackRate);
+
+			if (Number.isFinite(duration) && duration > 0) {
+				normalized.duration = duration;
+			}
+			if (Number.isFinite(trimStart) && trimStart >= 0) {
+				normalized.trimStart = trimStart;
+			}
+			if (Number.isFinite(trimEnd) && trimEnd > 0) {
+				normalized.trimEnd = trimEnd;
+			}
+			if (Number.isFinite(playbackRate) && playbackRate > 0) {
+				normalized.playbackRate = playbackRate;
+			}
+
+			return normalized;
 		}
 
 		function effectiveBingoSound() {
@@ -653,14 +830,549 @@ import Layout from '../layouts/Layout.astro';
 			});
 		}
 
+		function dataUrlToArrayBuffer(dataUrl) {
+			const base64 = dataUrl.split(',')[1] ?? '';
+			const binary = window.atob(base64);
+			const bytes = new Uint8Array(binary.length);
+			for (let index = 0; index < binary.length; index += 1) {
+				bytes[index] = binary.charCodeAt(index);
+			}
+			return bytes.buffer;
+		}
+
+		function getStudioAudioContext() {
+			const AudioContext = window.AudioContext || window.webkitAudioContext;
+			if (!studioAudioContext) {
+				studioAudioContext = new AudioContext();
+			}
+			return studioAudioContext;
+		}
+
+		async function decodeAudioDataUrl(dataUrl) {
+			const audioContext = getStudioAudioContext();
+			const arrayBuffer = dataUrlToArrayBuffer(dataUrl);
+			return audioContext.decodeAudioData(arrayBuffer.slice(0));
+		}
+
+		function stopStudioPlayback() {
+			if (!studioAudioSource) return;
+			try {
+				studioAudioSource.stop();
+			} catch {
+				// The source may already have ended.
+			}
+			studioAudioSource = null;
+			stopStudioPlaybackProgress();
+		}
+
+		async function playSoundSegment(sound, options = {}) {
+			const audioContext = getStudioAudioContext();
+			if (audioContext.state === 'suspended') {
+				await audioContext.resume();
+			}
+
+			const buffer = await decodeAudioDataUrl(sound.dataUrl);
+			const source = audioContext.createBufferSource();
+			const trimStart = Math.max(0, Number(sound.trimStart) || 0);
+			const trimEnd = Number(sound.trimEnd);
+			const end = Number.isFinite(trimEnd) && trimEnd > trimStart ? Math.min(trimEnd, buffer.duration) : buffer.duration;
+			const requestedStart = Number(options.startAt);
+			const start = Number.isFinite(requestedStart)
+				? Math.min(Math.max(requestedStart, trimStart), Math.max(trimStart, end - 0.05))
+				: trimStart;
+			const duration = Math.max(0.05, end - start);
+			const playbackRate = Number(sound.playbackRate) || 1;
+			const shouldTrackStudio = options.trackStudio !== false;
+
+			if (shouldTrackStudio) {
+				stopStudioPlayback();
+			}
+			source.buffer = buffer;
+			source.playbackRate.value = playbackRate;
+			source.connect(audioContext.destination);
+			source.addEventListener('ended', () => {
+				if (studioAudioSource === source) {
+					studioAudioSource = null;
+					stopStudioPlaybackProgress();
+				}
+				options.onEnded?.();
+			});
+			if (shouldTrackStudio) {
+				studioAudioSource = source;
+			}
+			source.start(0, start, duration);
+			return { source, start, duration, playbackRate, buffer };
+		}
+
+		function hasSoundEdits(sound) {
+			return (
+				Number.isFinite(Number(sound.trimStart)) ||
+				Number.isFinite(Number(sound.trimEnd)) ||
+				(Number.isFinite(Number(sound.playbackRate)) && Number(sound.playbackRate) !== 1)
+			);
+		}
+
 		function playBingoSound() {
 			const sound = effectiveBingoSound();
 			if (!sound) return;
+
+			if (sound.dataUrl && hasSoundEdits(sound)) {
+				playSoundSegment(sound, { trackStudio: false }).catch(() => {
+					setBingoSoundError('No se pudo reproducir el sonido. Prueba tocar "Probar" una vez.');
+				});
+				return;
+			}
 
 			const audio = new Audio(sound.dataUrl ?? sound.src);
 			audio.play().catch(() => {
 				setBingoSoundError('No se pudo reproducir el sonido. Prueba tocar "Probar" una vez.');
 			});
+		}
+
+		function formatSeconds(value) {
+			const seconds = Number(value) || 0;
+			return `${seconds.toFixed(1)}s`;
+		}
+
+		function waveformContext() {
+			return soundWaveformCanvas.getContext('2d');
+		}
+
+		function drawEmptyWaveform(label = 'Graba o carga una vista previa') {
+			const canvas = soundWaveformCanvas;
+			const context = waveformContext();
+			const width = canvas.width;
+			const height = canvas.height;
+			context.clearRect(0, 0, width, height);
+			context.fillStyle = '#f8fafc';
+			context.fillRect(0, 0, width, height);
+			context.strokeStyle = '#cbd5e1';
+			context.lineWidth = 2;
+			context.beginPath();
+			context.moveTo(0, height / 2);
+			context.lineTo(width, height / 2);
+			context.stroke();
+			context.fillStyle = '#64748b';
+			context.font = '700 16px system-ui';
+			context.textAlign = 'center';
+			context.fillText(label, width / 2, height / 2 - 14);
+		}
+
+		function drawWaveform(buffer, progress = 0) {
+			if (!buffer) {
+				drawEmptyWaveform();
+				return;
+			}
+
+			const canvas = soundWaveformCanvas;
+			const context = waveformContext();
+			const width = canvas.width;
+			const height = canvas.height;
+			const data = buffer.getChannelData(0);
+			const bars = 120;
+			const samplesPerBar = Math.max(1, Math.floor(data.length / bars));
+			const trimStart = Number(studioDraft?.trimStart) || 0;
+			const trimEnd = Number(studioDraft?.trimEnd) || buffer.duration;
+			const selectedStartRatio = buffer.duration ? trimStart / buffer.duration : 0;
+			const selectedEndRatio = buffer.duration ? trimEnd / buffer.duration : 1;
+
+			context.clearRect(0, 0, width, height);
+			context.fillStyle = '#f8fafc';
+			context.fillRect(0, 0, width, height);
+			context.fillStyle = '#e2e8f0';
+			context.fillRect(selectedStartRatio * width, 0, (selectedEndRatio - selectedStartRatio) * width, height);
+
+			for (let bar = 0; bar < bars; bar += 1) {
+				let peak = 0;
+				const start = bar * samplesPerBar;
+				const end = Math.min(start + samplesPerBar, data.length);
+				for (let index = start; index < end; index += 1) {
+					peak = Math.max(peak, Math.abs(data[index]));
+				}
+
+				const x = (bar / bars) * width;
+				const barWidth = Math.max(2, width / bars - 2);
+				const barHeight = Math.max(4, peak * (height - 24));
+				const ratio = bar / bars;
+				context.fillStyle = ratio >= selectedStartRatio && ratio <= selectedEndRatio ? '#059669' : '#94a3b8';
+				context.fillRect(x, (height - barHeight) / 2, barWidth, barHeight);
+			}
+
+			if (progress > 0) {
+				const progressX = Math.min(width, Math.max(0, progress * width));
+				context.strokeStyle = '#f59e0b';
+				context.lineWidth = 4;
+				context.beginPath();
+				context.moveTo(progressX, 0);
+				context.lineTo(progressX, height);
+				context.stroke();
+			}
+		}
+
+		function stopStudioMeter() {
+			if (studioMeterAnimation) {
+				cancelAnimationFrame(studioMeterAnimation);
+				studioMeterAnimation = null;
+			}
+			if (studioMeterSource) {
+				studioMeterSource.disconnect();
+				studioMeterSource = null;
+			}
+			studioAnalyser = null;
+		}
+
+		function drawRecordingMeter() {
+			if (!studioAnalyser || !studioIsRecording()) return;
+
+			const canvas = soundWaveformCanvas;
+			const context = waveformContext();
+			const width = canvas.width;
+			const height = canvas.height;
+			const data = new Uint8Array(studioAnalyser.fftSize);
+			studioAnalyser.getByteTimeDomainData(data);
+
+			context.clearRect(0, 0, width, height);
+			context.fillStyle = '#f8fafc';
+			context.fillRect(0, 0, width, height);
+			context.strokeStyle = '#059669';
+			context.lineWidth = 3;
+			context.beginPath();
+
+			data.forEach((value, index) => {
+				const x = (index / (data.length - 1)) * width;
+				const y = (value / 255) * height;
+				if (index === 0) {
+					context.moveTo(x, y);
+				} else {
+					context.lineTo(x, y);
+				}
+			});
+			context.stroke();
+
+			const elapsed = (performance.now() - studioRecordingStartedAt) / 1000;
+			studioTimelineInput.max = '60';
+			studioTimelineInput.value = String(Math.min(elapsed, 60));
+			studioTimeLabel.textContent = formatSeconds(elapsed);
+			studioMeterAnimation = requestAnimationFrame(drawRecordingMeter);
+		}
+
+		function startStudioPlaybackProgress(start, duration, playbackRate, buffer) {
+			if (studioPlaybackAnimation) {
+				cancelAnimationFrame(studioPlaybackAnimation);
+			}
+
+			studioPlaybackStartedAt = performance.now();
+			studioPlaybackStart = start;
+			studioPlaybackDuration = duration;
+
+			const tick = () => {
+				if (!studioAudioSource) return;
+				const elapsed = ((performance.now() - studioPlaybackStartedAt) / 1000) * playbackRate;
+				const current = Math.min(studioPlaybackStart + elapsed, studioPlaybackStart + studioPlaybackDuration);
+				studioTimelineInput.value = String(current);
+				studioTimeLabel.textContent = `${formatSeconds(current)} / ${formatSeconds(buffer.duration)}`;
+				drawWaveform(buffer, current / buffer.duration);
+				studioPlaybackAnimation = requestAnimationFrame(tick);
+			};
+
+			tick();
+		}
+
+		function stopStudioPlaybackProgress() {
+			if (studioPlaybackAnimation) {
+				cancelAnimationFrame(studioPlaybackAnimation);
+				studioPlaybackAnimation = null;
+			}
+		}
+
+		function setSoundStudioError(message) {
+			soundStudioError.textContent = message;
+			soundStudioError.classList.toggle('hidden', !message);
+		}
+
+		function stopStudioStream() {
+			if (!studioStream) return;
+			studioStream.getTracks().forEach((track) => track.stop());
+			studioStream = null;
+		}
+
+		function studioIsRecording() {
+			return studioRecorder?.state === 'recording';
+		}
+
+		function renderSoundStudio() {
+			const hasDraft = Boolean(studioDraft?.dataUrl);
+			const isRecording = studioIsRecording();
+			const isPlaying = Boolean(studioAudioSource);
+			const isBusy = isRecording || studioIsProcessing || isPlaying;
+			const duration = hasDraft ? Number(studioDraft.duration) || 0 : 0;
+			const trimStart = hasDraft ? Math.min(Number(studioDraft.trimStart) || 0, duration) : 0;
+			const trimEnd = hasDraft ? Math.min(Number(studioDraft.trimEnd) || duration, duration) : 0;
+			const playbackRate = hasDraft ? Number(studioDraft.playbackRate) || 1 : 1;
+			const currentTimelineValue = Number(studioTimelineInput.value);
+			const timelineValue = hasDraft
+				? Math.min(Math.max(Number.isFinite(currentTimelineValue) ? currentTimelineValue : trimStart, trimStart), trimEnd || duration)
+				: 0;
+
+			soundStudioStatus.textContent = isRecording
+				? 'Grabando...'
+				: hasDraft
+					? 'Grabación lista'
+					: 'Sin grabación';
+			soundStudioDetail.textContent = hasDraft
+				? `Duración ${formatSeconds(duration)}`
+				: 'Graba un audio corto para usarlo cuando salga Bingo.';
+			if (studioIsProcessing) {
+				soundStudioStatus.textContent = 'Preparando audio...';
+			}
+			if (hasDraft) {
+				soundStudioDetail.textContent = `Duración ${formatSeconds(duration)} · tramo ${formatSeconds(trimStart)}-${formatSeconds(trimEnd)} · ${playbackRate.toFixed(2)}x`;
+			}
+
+			startRecordingButton.disabled = isBusy;
+			stopRecordingButton.disabled = !isRecording;
+			playRecordingButton.disabled = !hasDraft || isRecording || studioIsProcessing;
+			resetRecordingButton.disabled = !hasDraft || isBusy;
+			saveSoundStudioButton.disabled = !hasDraft || isBusy;
+
+			trimStartInput.disabled = !hasDraft || isBusy;
+			trimEndInput.disabled = !hasDraft || isBusy;
+			soundSpeedInput.disabled = !hasDraft || isBusy;
+			studioTimelineInput.disabled = !hasDraft || isRecording || studioIsProcessing;
+
+			trimStartInput.max = String(duration);
+			trimEndInput.max = String(duration);
+			trimStartInput.value = String(trimStart);
+			trimEndInput.value = String(trimEnd);
+			soundSpeedInput.value = String(playbackRate);
+			studioTimelineInput.max = String(duration);
+			studioTimelineInput.value = String(timelineValue);
+
+			trimStartLabel.textContent = formatSeconds(trimStart);
+			trimEndLabel.textContent = formatSeconds(trimEnd);
+			soundSpeedLabel.textContent = `${playbackRate.toFixed(2)}x`;
+			studioTimeLabel.textContent = hasDraft
+				? `${formatSeconds(timelineValue)} / ${formatSeconds(duration)}`
+				: '0.0s';
+			playRecordingIcon.classList.toggle('hidden', isPlaying);
+			pauseRecordingIcon.classList.toggle('hidden', !isPlaying);
+			playRecordingLabel.textContent = isPlaying ? 'Pausar' : 'Reproducir';
+
+			if (isRecording) return;
+			if (hasDraft && studioWaveformBuffer) {
+				drawWaveform(studioWaveformBuffer, duration ? timelineValue / duration : 0);
+				return;
+			}
+			drawEmptyWaveform(studioIsProcessing ? 'Preparando forma de onda...' : undefined);
+		}
+
+		function openSoundStudio() {
+			setSoundStudioError('');
+			const existingSound = normalizeBingoSound(state.bingoSound);
+			studioDraft = existingSound?.kind === 'recorded' ? { ...existingSound } : null;
+			studioWaveformBuffer = null;
+			studioIsProcessing = Boolean(studioDraft?.dataUrl);
+			soundStudioModal.classList.remove('hidden');
+			document.body.classList.add('overflow-hidden');
+			renderSoundStudio();
+			if (!studioDraft?.dataUrl) return;
+
+			const draftDataUrl = studioDraft.dataUrl;
+			decodeAudioDataUrl(draftDataUrl)
+				.then((buffer) => {
+					if (studioDraft?.dataUrl !== draftDataUrl) return;
+					studioWaveformBuffer = buffer;
+					studioDraft.duration = Number(studioDraft.duration) || buffer.duration;
+					studioDraft.trimEnd = Number(studioDraft.trimEnd) || buffer.duration;
+					studioIsProcessing = false;
+					renderSoundStudio();
+				})
+				.catch(() => {
+					studioIsProcessing = false;
+					setSoundStudioError('No se pudo preparar la forma de onda.');
+					renderSoundStudio();
+				});
+		}
+
+		function closeSoundStudio() {
+			if (studioIsRecording()) {
+				studioRecorder.stop();
+			}
+			stopStudioPlayback();
+			stopStudioMeter();
+			stopStudioStream();
+			studioRecorder = null;
+			studioChunks = [];
+			studioDraft = null;
+			studioWaveformBuffer = null;
+			studioIsProcessing = false;
+			soundStudioModal.classList.add('hidden');
+			document.body.classList.remove('overflow-hidden');
+			setSoundStudioError('');
+		}
+
+		async function startStudioRecording() {
+			setSoundStudioError('');
+			if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+				setSoundStudioError('Tu navegador no permite grabar audio desde esta pantalla.');
+				return;
+			}
+
+			try {
+				stopStudioPlayback();
+				stopStudioMeter();
+				studioWaveformBuffer = null;
+				studioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+				studioChunks = [];
+				const audioContext = getStudioAudioContext();
+				if (audioContext.state === 'suspended') {
+					await audioContext.resume();
+				}
+				studioAnalyser = audioContext.createAnalyser();
+				studioAnalyser.fftSize = 2048;
+				studioMeterSource = audioContext.createMediaStreamSource(studioStream);
+				studioMeterSource.connect(studioAnalyser);
+				const preferredType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+					? 'audio/webm;codecs=opus'
+					: '';
+				studioRecorder = new MediaRecorder(
+					studioStream,
+					preferredType ? { mimeType: preferredType } : undefined,
+				);
+				studioRecorder.addEventListener('dataavailable', (event) => {
+					if (event.data.size > 0) {
+						studioChunks.push(event.data);
+					}
+				});
+				studioRecorder.addEventListener('stop', async () => {
+					const blob = new Blob(studioChunks, { type: studioRecorder?.mimeType || 'audio/webm' });
+					stopStudioMeter();
+					stopStudioStream();
+					studioRecorder = null;
+					studioChunks = [];
+
+					try {
+						const dataUrl = await audioFileToDataUrl(blob);
+						studioWaveformBuffer = await decodeAudioDataUrl(dataUrl);
+						const duration = studioWaveformBuffer.duration;
+						studioDraft = {
+							name: 'Sonido grabado',
+							dataUrl,
+							kind: 'recorded',
+							duration,
+							trimStart: 0,
+							trimEnd: duration,
+							playbackRate: 1,
+						};
+					} catch {
+						setSoundStudioError('No se pudo preparar la grabación.');
+					}
+
+					studioIsProcessing = false;
+					renderSoundStudio();
+				});
+				studioRecorder.start();
+				studioDraft = null;
+				studioIsProcessing = false;
+				studioRecordingStartedAt = performance.now();
+				renderSoundStudio();
+				drawRecordingMeter();
+			} catch {
+				stopStudioMeter();
+				stopStudioStream();
+				studioRecorder = null;
+				studioIsProcessing = false;
+				setSoundStudioError('No se pudo acceder al micrófono.');
+				renderSoundStudio();
+			}
+		}
+
+		function stopStudioRecording() {
+			if (!studioIsRecording()) return;
+			studioIsProcessing = true;
+			studioRecorder.stop();
+			stopStudioMeter();
+			renderSoundStudio();
+		}
+
+		function updateStudioTrim(changedField) {
+			if (!studioDraft) return;
+			const duration = Number(studioDraft.duration) || 0;
+			let start = Number(trimStartInput.value) || 0;
+			let end = Number(trimEndInput.value) || duration;
+
+			if (changedField === 'start' && start >= end) {
+				start = Math.max(0, end - 0.05);
+			}
+			if (changedField === 'end' && end <= start) {
+				end = Math.min(duration, start + 0.05);
+			}
+
+			studioDraft.trimStart = Math.max(0, Math.min(start, duration));
+			studioDraft.trimEnd = Math.max(studioDraft.trimStart + 0.05, Math.min(end, duration));
+			studioTimelineInput.value = String(studioDraft.trimStart);
+			renderSoundStudio();
+		}
+
+		function updateStudioSpeed() {
+			if (!studioDraft) return;
+			studioDraft.playbackRate = Number(soundSpeedInput.value) || 1;
+			renderSoundStudio();
+		}
+
+		function playStudioDraft() {
+			if (!studioDraft?.dataUrl) return;
+			setSoundStudioError('');
+			if (studioAudioSource) {
+				stopStudioPlayback();
+				renderSoundStudio();
+				return;
+			}
+
+			const startAt = Number(studioTimelineInput.value) || Number(studioDraft.trimStart) || 0;
+			playSoundSegment(studioDraft, {
+				startAt,
+				onEnded: () => {
+					stopStudioPlaybackProgress();
+					studioTimelineInput.value = String(Number(studioDraft?.trimStart) || 0);
+					renderSoundStudio();
+				},
+			}).then((result) => {
+				studioWaveformBuffer = result.buffer;
+				startStudioPlaybackProgress(result.start, result.duration, result.playbackRate, result.buffer);
+				renderSoundStudio();
+			}).catch(() => {
+				setSoundStudioError('No se pudo reproducir la grabación.');
+				renderSoundStudio();
+			});
+		}
+
+		function resetStudioDraft() {
+			stopStudioPlayback();
+			studioDraft = null;
+			studioWaveformBuffer = null;
+			studioIsProcessing = false;
+			setSoundStudioError('');
+			renderSoundStudio();
+		}
+
+		function saveSoundStudio() {
+			if (!studioDraft?.dataUrl) {
+				setSoundStudioError('Primero graba un sonido.');
+				return;
+			}
+
+			const previousSound = state.bingoSound;
+			state.bingoSound = normalizeBingoSound(studioDraft);
+			if (!saveState()) {
+				state.bingoSound = previousSound;
+				setSoundStudioError('La grabación es muy grande para guardarla. Intenta una más corta.');
+				return;
+			}
+
+			closeSoundStudio();
+			setBingoSoundError('');
+			renderBingoSound();
 		}
 
 		function renderSummary() {
@@ -1083,6 +1795,32 @@ import Layout from '../layouts/Layout.astro';
 			renderBingoSound();
 		});
 
+		openSoundStudioButton.addEventListener('click', openSoundStudio);
+		startRecordingButton.addEventListener('click', startStudioRecording);
+		stopRecordingButton.addEventListener('click', stopStudioRecording);
+		playRecordingButton.addEventListener('click', playStudioDraft);
+		resetRecordingButton.addEventListener('click', resetStudioDraft);
+		cancelSoundStudioButton.addEventListener('click', closeSoundStudio);
+		saveSoundStudioButton.addEventListener('click', saveSoundStudio);
+		trimStartInput.addEventListener('input', () => updateStudioTrim('start'));
+		trimEndInput.addEventListener('input', () => updateStudioTrim('end'));
+		soundSpeedInput.addEventListener('input', updateStudioSpeed);
+		studioTimelineInput.addEventListener('input', () => {
+			if (!studioDraft?.dataUrl || !studioWaveformBuffer) return;
+			const current = Number(studioTimelineInput.value) || 0;
+			studioTimeLabel.textContent = `${formatSeconds(current)} / ${formatSeconds(studioWaveformBuffer.duration)}`;
+			drawWaveform(studioWaveformBuffer, studioWaveformBuffer.duration ? current / studioWaveformBuffer.duration : 0);
+			if (studioAudioSource) {
+				stopStudioPlayback();
+				renderSoundStudio();
+			}
+		});
+
+		soundStudioModal.addEventListener('click', (event) => {
+			if (!event.target.closest('[data-close-sound-studio]')) return;
+			closeSoundStudio();
+		});
+
 		bingoTypeSelect.addEventListener('change', () => {
 			if (bingoTypeSelect.value === CUSTOM_TYPE_KEY) {
 				openCustomPatternModal();
@@ -1098,8 +1836,13 @@ import Layout from '../layouts/Layout.astro';
 		cardSearch.addEventListener('input', renderCards);
 
 		document.addEventListener('keydown', (event) => {
-			if (event.key !== 'Escape' || customPatternModal.classList.contains('hidden')) return;
-			closeCustomPatternModal();
+			if (event.key !== 'Escape') return;
+			if (!customPatternModal.classList.contains('hidden')) {
+				closeCustomPatternModal();
+			}
+			if (!soundStudioModal.classList.contains('hidden')) {
+				closeSoundStudio();
+			}
 		});
 
 		renderNumberInputs();
