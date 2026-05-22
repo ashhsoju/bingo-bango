@@ -103,6 +103,7 @@ import Layout from '../layouts/Layout.astro';
 							<option value="x">Letra X</option>
 							<option value="corners">Cuatro esquinas</option>
 							<option value="frame">Marco</option>
+							<option value="custom">Personalizado</option>
 						</select>
 					</label>
 
@@ -113,6 +114,10 @@ import Layout from '../layouts/Layout.astro';
 						</div>
 						<div id="pattern-preview" class="grid max-w-44 grid-cols-5 gap-1"></div>
 					</div>
+
+					<button id="edit-custom-pattern" class="bingo-button bingo-button-secondary mt-4 hidden w-full" type="button">
+						Editar figura
+					</button>
 				</section>
 			</aside>
 
@@ -140,8 +145,40 @@ import Layout from '../layouts/Layout.astro';
 
 	<div id="toast-region" class="pointer-events-none fixed right-4 top-4 z-50 flex w-[min(360px,calc(100vw-2rem))] flex-col gap-3"></div>
 
+	<div id="custom-pattern-modal" class="fixed inset-0 z-40 hidden flex items-center justify-center p-4">
+		<button class="absolute inset-0 bg-slate-950/50" type="button" data-close-custom-pattern aria-label="Cerrar"></button>
+		<section class="relative w-full max-w-md rounded-lg border border-slate-200 bg-white p-5 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="custom-pattern-title">
+			<div class="mb-4 flex items-center justify-between gap-3">
+				<h2 id="custom-pattern-title" class="text-xl font-black text-slate-950">Figura personalizada</h2>
+				<button class="bingo-button bingo-button-secondary size-9 px-0" type="button" data-close-custom-pattern aria-label="Cerrar">
+					X
+				</button>
+			</div>
+
+			<div class="mb-2 grid grid-cols-5 gap-2 text-center text-xs font-black text-slate-500">
+				<span>B</span>
+				<span>I</span>
+				<span>N</span>
+				<span>G</span>
+				<span>O</span>
+			</div>
+			<div id="custom-pattern-grid" class="grid grid-cols-5 gap-2"></div>
+
+			<div class="mt-4 flex items-center justify-between gap-3">
+				<span id="custom-pattern-count" class="text-sm font-black text-slate-700"></span>
+				<p id="custom-pattern-error" class="hidden text-sm font-semibold text-red-700"></p>
+			</div>
+
+			<div class="mt-5 grid gap-2 sm:grid-cols-2">
+				<button id="cancel-custom-pattern" class="bingo-button bingo-button-secondary" type="button">Cancelar</button>
+				<button id="save-custom-pattern" class="bingo-button bingo-button-primary" type="button">Guardar figura</button>
+			</div>
+		</section>
+	</div>
+
 	<script>
 		const STORAGE_KEY = 'bingo-bango-state-v1';
+		const CUSTOM_TYPE_KEY = 'custom';
 		const CARD_SIZE = 25;
 		const ACTIVE_CARD_SIZE = 24;
 		const CENTER_INDEX = 12;
@@ -160,6 +197,7 @@ import Layout from '../layouts/Layout.astro';
 			activePattern([0, 6, 12, 18, 24]),
 			activePattern([4, 8, 12, 16, 20]),
 		];
+		const DEFAULT_CUSTOM_PATTERN = activePattern([0, 1, 2, 3, 4]);
 		const BINGO_TYPES = {
 			full: {
 				label: 'Cartilla completa',
@@ -196,6 +234,11 @@ import Layout from '../layouts/Layout.astro';
 				winLabel: 'Bingo marco',
 				patterns: [[0, 1, 2, 3, 4, 5, 9, 10, 14, 15, 19, 20, 21, 22, 23, 24]],
 			},
+			[CUSTOM_TYPE_KEY]: {
+				label: 'Personalizado',
+				winLabel: 'Bingo personalizado',
+				patterns: [DEFAULT_CUSTOM_PATTERN],
+			},
 		};
 
 		const summary = document.querySelector('#summary');
@@ -223,12 +266,20 @@ import Layout from '../layouts/Layout.astro';
 		const bingoTypeLabel = document.querySelector('#bingo-type-label');
 		const bingoTypeRequirement = document.querySelector('#bingo-type-requirement');
 		const patternPreview = document.querySelector('#pattern-preview');
+		const editCustomPatternButton = document.querySelector('#edit-custom-pattern');
 		const toastRegion = document.querySelector('#toast-region');
+		const customPatternModal = document.querySelector('#custom-pattern-modal');
+		const customPatternGrid = document.querySelector('#custom-pattern-grid');
+		const customPatternCount = document.querySelector('#custom-pattern-count');
+		const customPatternError = document.querySelector('#custom-pattern-error');
+		const cancelCustomPatternButton = document.querySelector('#cancel-custom-pattern');
+		const saveCustomPatternButton = document.querySelector('#save-custom-pattern');
 
 		let editingCardId = null;
 		let state = loadState();
 		let hasRendered = false;
 		let previousWinningKeys = new Set();
+		let customPatternDraft = [];
 
 		function loadState() {
 			try {
@@ -237,14 +288,24 @@ import Layout from '../layouts/Layout.astro';
 					cards: Array.isArray(saved.cards) ? saved.cards.map(normalizeCard) : [],
 					drawnNumbers: Array.isArray(saved.drawnNumbers) ? saved.drawnNumbers : [],
 					bingoType: BINGO_TYPES[saved.bingoType] ? saved.bingoType : 'full',
+					customPattern: normalizeCustomPattern(saved.customPattern),
 				};
 			} catch {
-				return { cards: [], drawnNumbers: [], bingoType: 'full' };
+				return { cards: [], drawnNumbers: [], bingoType: 'full', customPattern: DEFAULT_CUSTOM_PATTERN };
 			}
 		}
 
 		function saveState() {
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+		}
+
+		function normalizeCustomPattern(pattern) {
+			const indexes = Array.isArray(pattern) ? pattern : DEFAULT_CUSTOM_PATTERN;
+			const cleanIndexes = uniquePattern(indexes)
+				.map((index) => Number(index))
+				.filter((index) => ACTIVE_INDEXES.includes(index));
+
+			return cleanIndexes.length > 0 ? cleanIndexes : [...DEFAULT_CUSTOM_PATTERN];
 		}
 
 		function normalizeCard(card) {
@@ -381,6 +442,13 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		function currentBingoType() {
+			if (currentBingoTypeKey() === CUSTOM_TYPE_KEY) {
+				return {
+					...BINGO_TYPES[CUSTOM_TYPE_KEY],
+					patterns: [normalizeCustomPattern(state.customPattern)],
+				};
+			}
+
 			return BINGO_TYPES[currentBingoTypeKey()];
 		}
 
@@ -399,7 +467,10 @@ import Layout from '../layouts/Layout.astro';
 			const type = currentBingoType();
 			const patternResults = type.patterns
 				.map((pattern) => patternProgress(card, drawnSet, pattern))
-				.sort((first, second) => second.matched - first.matched);
+				.sort((first, second) => {
+					if (second.matched !== first.matched) return second.matched - first.matched;
+					return second.matched / second.required - first.matched / first.required;
+				});
 			const winningPattern = patternResults.find((pattern) => pattern.isComplete);
 			const bestPattern = winningPattern ?? patternResults[0];
 
@@ -431,6 +502,7 @@ import Layout from '../layouts/Layout.astro';
 			bingoTypeSelect.value = typeKey;
 			bingoTypeLabel.textContent = type.label;
 			bingoTypeRequirement.textContent = `${previewIndexes.size} casillas`;
+			editCustomPatternButton.classList.toggle('hidden', typeKey !== CUSTOM_TYPE_KEY);
 			patternPreview.innerHTML = ALL_INDEXES.map((index) => {
 				const isDisabled = index === CENTER_INDEX;
 				const isActive = previewIndexes.has(index);
@@ -443,6 +515,68 @@ import Layout from '../layouts/Layout.astro';
 					<div class="aspect-square rounded-sm border ${classes}"></div>
 				`;
 			}).join('');
+		}
+
+		function patternPositionLabel(index) {
+			const column = CARD_COLUMNS[index % CARD_COLUMNS.length];
+			const row = Math.floor(index / CARD_COLUMNS.length) + 1;
+			return `${column}${row}`;
+		}
+
+		function setCustomPatternError(message) {
+			customPatternError.textContent = message;
+			customPatternError.classList.toggle('hidden', !message);
+		}
+
+		function renderCustomPatternGrid() {
+			const selectedIndexes = new Set(customPatternDraft);
+			customPatternCount.textContent = `${selectedIndexes.size} casillas`;
+			customPatternGrid.innerHTML = ALL_INDEXES.map((index) => {
+				if (index === CENTER_INDEX) {
+					return controlCellMarkup('Centro', 'is-card-cell');
+				}
+
+				const isSelected = selectedIndexes.has(index);
+				return `
+					<button
+						class="custom-pattern-cell ${isSelected ? 'is-selected' : ''}"
+						type="button"
+						data-custom-pattern-index="${index}"
+						aria-pressed="${isSelected}"
+					>
+						${patternPositionLabel(index)}
+					</button>
+				`;
+			}).join('');
+		}
+
+		function openCustomPatternModal() {
+			customPatternDraft = normalizeCustomPattern(state.customPattern);
+			setCustomPatternError('');
+			renderCustomPatternGrid();
+			customPatternModal.classList.remove('hidden');
+			document.body.classList.add('overflow-hidden');
+		}
+
+		function closeCustomPatternModal() {
+			customPatternModal.classList.add('hidden');
+			document.body.classList.remove('overflow-hidden');
+			customPatternDraft = [];
+			renderBingoType();
+		}
+
+		function saveCustomPattern() {
+			if (customPatternDraft.length === 0) {
+				setCustomPatternError('Selecciona al menos una casilla.');
+				return;
+			}
+
+			state.customPattern = normalizeCustomPattern(customPatternDraft);
+			state.bingoType = CUSTOM_TYPE_KEY;
+			hasRendered = false;
+			saveState();
+			closeCustomPatternModal();
+			render();
 		}
 
 		function renderSummary() {
@@ -488,7 +622,6 @@ import Layout from '../layouts/Layout.astro';
 		}
 
 		function visiblePatternIndexes(status) {
-			if (currentBingoTypeKey() === 'line' && !status.isBingo) return new Set();
 			if (currentBingoTypeKey() === 'full') return new Set();
 			return new Set(status.patternIndexes);
 		}
@@ -797,7 +930,38 @@ import Layout from '../layouts/Layout.astro';
 			});
 		});
 
+		customPatternGrid.addEventListener('click', (event) => {
+			const button = event.target.closest('[data-custom-pattern-index]');
+			if (!button) return;
+
+			const index = Number(button.dataset.customPatternIndex);
+			if (!ACTIVE_INDEXES.includes(index)) return;
+
+			if (customPatternDraft.includes(index)) {
+				customPatternDraft = customPatternDraft.filter((item) => item !== index);
+			} else {
+				customPatternDraft = [...customPatternDraft, index].sort((first, second) => first - second);
+			}
+
+			setCustomPatternError('');
+			renderCustomPatternGrid();
+		});
+
+		customPatternModal.addEventListener('click', (event) => {
+			if (!event.target.closest('[data-close-custom-pattern]')) return;
+			closeCustomPatternModal();
+		});
+
+		cancelCustomPatternButton.addEventListener('click', closeCustomPatternModal);
+		saveCustomPatternButton.addEventListener('click', saveCustomPattern);
+		editCustomPatternButton.addEventListener('click', openCustomPatternModal);
+
 		bingoTypeSelect.addEventListener('change', () => {
+			if (bingoTypeSelect.value === CUSTOM_TYPE_KEY) {
+				openCustomPatternModal();
+				return;
+			}
+
 			state.bingoType = BINGO_TYPES[bingoTypeSelect.value] ? bingoTypeSelect.value : 'full';
 			hasRendered = false;
 			saveState();
@@ -805,6 +969,11 @@ import Layout from '../layouts/Layout.astro';
 		});
 
 		cardSearch.addEventListener('input', renderCards);
+
+		document.addEventListener('keydown', (event) => {
+			if (event.key !== 'Escape' || customPatternModal.classList.contains('hidden')) return;
+			closeCustomPatternModal();
+		});
 
 		renderNumberInputs();
 		render();

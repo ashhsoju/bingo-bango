@@ -52,6 +52,14 @@ body {
 		@apply mt-0.5 max-w-full truncate text-[10px] font-black text-slate-700 sm:text-xs;
 	}
 
+	.custom-pattern-cell {
+		@apply flex aspect-square min-w-0 items-center justify-center rounded-md border border-slate-300 bg-white text-xs font-black text-slate-700 transition hover:border-emerald-500 hover:bg-emerald-50;
+	}
+
+	.custom-pattern-cell.is-selected {
+		@apply border-emerald-600 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700;
+	}
+
 	.bingo-button {
 		@apply inline-flex h-10 items-center justify-center rounded-md border border-transparent px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
 	}
