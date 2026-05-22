@@ -118,6 +118,24 @@ import Layout from '../layouts/Layout.astro';
 					<button id="edit-custom-pattern" class="bingo-button bingo-button-secondary mt-4 hidden w-full" type="button">
 						Editar figura
 					</button>
+
+					<div class="mt-5 border-t border-slate-200 pt-4">
+						<h3 class="text-sm font-black text-slate-950">Sonido de Bingo</h3>
+						<p id="bingo-sound-status" class="mt-1 truncate text-sm font-semibold text-slate-500"></p>
+						<input id="bingo-sound-input" class="sr-only" type="file" accept="audio/*" />
+						<p id="bingo-sound-error" class="mt-2 hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"></p>
+						<div class="mt-3 grid gap-2 sm:grid-cols-3">
+							<label class="bingo-button bingo-button-secondary cursor-pointer" for="bingo-sound-input">
+								Cargar
+							</label>
+							<button id="test-bingo-sound" class="bingo-button bingo-button-secondary" type="button">
+								Probar
+							</button>
+							<button id="remove-bingo-sound" class="bingo-button bingo-button-danger" type="button">
+								Quitar
+							</button>
+						</div>
+					</div>
 				</section>
 			</aside>
 
@@ -179,6 +197,10 @@ import Layout from '../layouts/Layout.astro';
 	<script>
 		const STORAGE_KEY = 'bingo-bango-state-v1';
 		const CUSTOM_TYPE_KEY = 'custom';
+		const DEFAULT_BINGO_SOUND = {
+			name: 'bingo.mp3',
+			src: '/bingo.mp3',
+		};
 		const CARD_SIZE = 25;
 		const ACTIVE_CARD_SIZE = 24;
 		const CENTER_INDEX = 12;
@@ -268,6 +290,11 @@ import Layout from '../layouts/Layout.astro';
 		const patternPreview = document.querySelector('#pattern-preview');
 		const editCustomPatternButton = document.querySelector('#edit-custom-pattern');
 		const toastRegion = document.querySelector('#toast-region');
+		const bingoSoundInput = document.querySelector('#bingo-sound-input');
+		const bingoSoundStatus = document.querySelector('#bingo-sound-status');
+		const bingoSoundError = document.querySelector('#bingo-sound-error');
+		const testBingoSoundButton = document.querySelector('#test-bingo-sound');
+		const removeBingoSoundButton = document.querySelector('#remove-bingo-sound');
 		const customPatternModal = document.querySelector('#custom-pattern-modal');
 		const customPatternGrid = document.querySelector('#custom-pattern-grid');
 		const customPatternCount = document.querySelector('#custom-pattern-count');
@@ -289,14 +316,26 @@ import Layout from '../layouts/Layout.astro';
 					drawnNumbers: Array.isArray(saved.drawnNumbers) ? saved.drawnNumbers : [],
 					bingoType: BINGO_TYPES[saved.bingoType] ? saved.bingoType : 'full',
 					customPattern: normalizeCustomPattern(saved.customPattern),
+					bingoSound: normalizeBingoSound(saved.bingoSound),
 				};
 			} catch {
-				return { cards: [], drawnNumbers: [], bingoType: 'full', customPattern: DEFAULT_CUSTOM_PATTERN };
+				return {
+					cards: [],
+					drawnNumbers: [],
+					bingoType: 'full',
+					customPattern: DEFAULT_CUSTOM_PATTERN,
+					bingoSound: null,
+				};
 			}
 		}
 
 		function saveState() {
-			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+			try {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+				return true;
+			} catch {
+				return false;
+			}
 		}
 
 		function normalizeCustomPattern(pattern) {
@@ -306,6 +345,19 @@ import Layout from '../layouts/Layout.astro';
 				.filter((index) => ACTIVE_INDEXES.includes(index));
 
 			return cleanIndexes.length > 0 ? cleanIndexes : [...DEFAULT_CUSTOM_PATTERN];
+		}
+
+		function normalizeBingoSound(sound) {
+			if (!sound || typeof sound !== 'object') return null;
+			const name = String(sound.name ?? '').trim();
+			const dataUrl = String(sound.dataUrl ?? '');
+			if (!name || !dataUrl.startsWith('data:audio/')) return null;
+			return { name, dataUrl };
+		}
+
+		function effectiveBingoSound() {
+			const customSound = normalizeBingoSound(state.bingoSound);
+			return customSound ?? DEFAULT_BINGO_SOUND;
 		}
 
 		function normalizeCard(card) {
@@ -404,6 +456,11 @@ import Layout from '../layouts/Layout.astro';
 		function setDrawError(message) {
 			drawError.textContent = message;
 			drawError.classList.toggle('hidden', !message);
+		}
+
+		function setBingoSoundError(message) {
+			bingoSoundError.textContent = message;
+			bingoSoundError.classList.toggle('hidden', !message);
 		}
 
 		function normalizeNumber(value) {
@@ -517,6 +574,14 @@ import Layout from '../layouts/Layout.astro';
 			}).join('');
 		}
 
+		function renderBingoSound() {
+			const customSound = normalizeBingoSound(state.bingoSound);
+			const sound = effectiveBingoSound();
+			bingoSoundStatus.textContent = customSound ? sound.name : `${sound.name} por defecto`;
+			testBingoSoundButton.disabled = false;
+			removeBingoSoundButton.disabled = !customSound;
+		}
+
 		function patternPositionLabel(index) {
 			const column = CARD_COLUMNS[index % CARD_COLUMNS.length];
 			const row = Math.floor(index / CARD_COLUMNS.length) + 1;
@@ -577,6 +642,25 @@ import Layout from '../layouts/Layout.astro';
 			saveState();
 			closeCustomPatternModal();
 			render();
+		}
+
+		function audioFileToDataUrl(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.addEventListener('load', () => resolve(String(reader.result)));
+				reader.addEventListener('error', () => reject(reader.error));
+				reader.readAsDataURL(file);
+			});
+		}
+
+		function playBingoSound() {
+			const sound = effectiveBingoSound();
+			if (!sound) return;
+
+			const audio = new Audio(sound.dataUrl ?? sound.src);
+			audio.play().catch(() => {
+				setBingoSoundError('No se pudo reproducir el sonido. Prueba tocar "Probar" una vez.');
+			});
 		}
 
 		function renderSummary() {
@@ -732,6 +816,7 @@ import Layout from '../layouts/Layout.astro';
 			`;
 
 			toastRegion.append(toast);
+			playBingoSound();
 			window.setTimeout(() => {
 				toast.classList.add('translate-y-1', 'opacity-0');
 				window.setTimeout(() => toast.remove(), 300);
@@ -757,6 +842,7 @@ import Layout from '../layouts/Layout.astro';
 
 		function render() {
 			renderBingoType();
+			renderBingoSound();
 			renderSummary();
 			renderDrawnNumbers();
 			renderCards();
@@ -955,6 +1041,47 @@ import Layout from '../layouts/Layout.astro';
 		cancelCustomPatternButton.addEventListener('click', closeCustomPatternModal);
 		saveCustomPatternButton.addEventListener('click', saveCustomPattern);
 		editCustomPatternButton.addEventListener('click', openCustomPatternModal);
+
+		bingoSoundInput.addEventListener('change', async () => {
+			const file = bingoSoundInput.files?.[0];
+			if (!file) return;
+
+			setBingoSoundError('');
+			if (!file.type.startsWith('audio/')) {
+				setBingoSoundError('Selecciona un archivo de audio.');
+				bingoSoundInput.value = '';
+				return;
+			}
+
+			const previousSound = state.bingoSound;
+			try {
+				const dataUrl = await audioFileToDataUrl(file);
+				state.bingoSound = { name: file.name, dataUrl };
+
+				if (!saveState()) {
+					state.bingoSound = previousSound;
+					setBingoSoundError('El audio es muy grande para guardarlo. Usa una grabación más corta.');
+				}
+			} catch {
+				state.bingoSound = previousSound;
+				setBingoSoundError('No se pudo leer el archivo de audio.');
+			}
+
+			bingoSoundInput.value = '';
+			renderBingoSound();
+		});
+
+		testBingoSoundButton.addEventListener('click', () => {
+			setBingoSoundError('');
+			playBingoSound();
+		});
+
+		removeBingoSoundButton.addEventListener('click', () => {
+			state.bingoSound = null;
+			saveState();
+			setBingoSoundError('');
+			renderBingoSound();
+		});
 
 		bingoTypeSelect.addEventListener('change', () => {
 			if (bingoTypeSelect.value === CUSTOM_TYPE_KEY) {
