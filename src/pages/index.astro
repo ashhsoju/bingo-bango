@@ -1,11 +1,812 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Bingo Bango">
+	<main class="min-h-screen bg-[#f7f4ee]">
+		<header class="border-b border-slate-200 bg-white">
+			<div class="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+				<div class="flex items-center gap-4">
+					<div class="grid size-14 place-items-center rounded-lg bg-slate-950 text-2xl font-black text-white shadow-sm">
+						B
+					</div>
+					<div>
+						<p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Mesa de control</p>
+						<h1 class="text-3xl font-black text-slate-950 sm:text-4xl">Bingo Bango</h1>
+					</div>
+				</div>
+
+				<div id="summary" class="grid grid-cols-3 gap-2 sm:min-w-[420px]"></div>
+			</div>
+		</header>
+
+		<section class="mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8">
+			<aside class="space-y-6">
+				<section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+					<div class="mb-4 flex items-center justify-between gap-3">
+						<h2 class="text-lg font-black text-slate-950">Números cantados</h2>
+						<span id="last-drawn" class="grid size-10 place-items-center rounded-md bg-amber-100 text-sm font-black text-amber-900">-</span>
+					</div>
+
+					<form id="draw-form" class="grid grid-cols-[1fr_auto] gap-2">
+						<label>
+							<span class="sr-only">Número cantado</span>
+							<input id="draw-number" class="bingo-input" type="number" min="1" max="75" placeholder="1-75" />
+						</label>
+						<button class="bingo-button bingo-button-primary px-5" type="submit">Agregar</button>
+					</form>
+
+					<p id="draw-error" class="mt-3 hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"></p>
+
+					<div class="mt-4 grid grid-cols-2 gap-2">
+						<button id="undo-draw" class="bingo-button bingo-button-secondary" type="button">Deshacer</button>
+						<button id="clear-draws" class="bingo-button bingo-button-danger" type="button">Reiniciar</button>
+					</div>
+
+					<div id="drawn-list" class="mt-4 flex min-h-12 flex-wrap gap-2"></div>
+				</section>
+
+				<section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+					<div class="mb-4 flex items-center justify-between gap-3">
+						<h2 id="form-title" class="text-lg font-black text-slate-950">Nueva cartilla</h2>
+						<button id="random-card" class="bingo-button bingo-button-secondary h-9 px-3" type="button">
+							Aleatoria
+						</button>
+					</div>
+
+					<form id="card-form" class="space-y-4">
+						<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+							<label class="space-y-1.5">
+								<span class="text-sm font-semibold text-slate-700">ID cartilla</span>
+								<input id="card-id" class="bingo-input" autocomplete="off" placeholder="A-001" />
+							</label>
+
+							<label class="space-y-1.5">
+								<span class="text-sm font-semibold text-slate-700">Dueño</span>
+								<input id="card-owner" class="bingo-input" autocomplete="off" placeholder="Nombre" />
+							</label>
+						</div>
+
+						<div>
+							<div class="mb-2 grid grid-cols-5 gap-2 text-center text-xs font-black text-slate-500">
+								<span>B</span>
+								<span>I</span>
+								<span>N</span>
+								<span>G</span>
+								<span>O</span>
+							</div>
+							<div id="numbers-grid" class="grid grid-cols-5 gap-2"></div>
+						</div>
+
+						<p id="form-error" class="hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"></p>
+
+						<div class="grid gap-2 sm:grid-cols-2">
+							<button id="save-card" class="bingo-button bingo-button-primary" type="submit">
+								Guardar cartilla
+							</button>
+							<button id="clear-form" class="bingo-button bingo-button-secondary" type="button">
+								Limpiar
+							</button>
+						</div>
+					</form>
+				</section>
+
+				<section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+					<h2 class="mb-4 text-lg font-black text-slate-950">Tipo de Bingo</h2>
+					<label class="space-y-1.5">
+						<span class="text-sm font-semibold text-slate-700">Figura ganadora</span>
+						<select id="bingo-type" class="bingo-input">
+							<option value="full">Cartilla completa</option>
+							<option value="line">Linea</option>
+							<option value="t">Letra T</option>
+							<option value="n">Letra N</option>
+							<option value="x">Letra X</option>
+							<option value="corners">Cuatro esquinas</option>
+							<option value="frame">Marco</option>
+						</select>
+					</label>
+
+					<div class="mt-4">
+						<div class="mb-2 flex items-center justify-between gap-3">
+							<span id="bingo-type-label" class="text-sm font-black text-slate-900"></span>
+							<span id="bingo-type-requirement" class="text-xs font-bold uppercase tracking-wide text-slate-500"></span>
+						</div>
+						<div id="pattern-preview" class="grid max-w-44 grid-cols-5 gap-1"></div>
+					</div>
+				</section>
+			</aside>
+
+			<section class="min-w-0 space-y-4">
+				<div class="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+					<div>
+						<h2 class="text-xl font-black text-slate-950">Cartillas</h2>
+						<p id="cards-subtitle" class="text-sm font-medium text-slate-500"></p>
+					</div>
+					<label class="sm:w-72">
+						<span class="sr-only">Buscar cartilla</span>
+						<input id="card-search" class="bingo-input" autocomplete="off" placeholder="Buscar por ID o dueño" />
+					</label>
+				</div>
+
+				<div id="cards-empty" class="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+					<p class="text-lg font-black text-slate-900">Sin cartillas</p>
+					<p class="mt-1 text-sm font-medium text-slate-500">Registra la primera cartilla para empezar.</p>
+				</div>
+
+				<div id="cards-grid" class="grid gap-4 xl:grid-cols-2"></div>
+			</section>
+		</section>
+	</main>
+
+	<div id="toast-region" class="pointer-events-none fixed right-4 top-4 z-50 flex w-[min(360px,calc(100vw-2rem))] flex-col gap-3"></div>
+
+	<script>
+		const STORAGE_KEY = 'bingo-bango-state-v1';
+		const CARD_SIZE = 25;
+		const ACTIVE_CARD_SIZE = 24;
+		const CENTER_INDEX = 12;
+		const CARD_COLUMNS = ['B', 'I', 'N', 'G', 'O'];
+		const ALL_INDEXES = Array.from({ length: CARD_SIZE }, (_, index) => index);
+		const ACTIVE_INDEXES = ALL_INDEXES.filter((index) => index !== CENTER_INDEX);
+		const activePattern = (pattern) => pattern.filter((index) => index !== CENTER_INDEX);
+		const FULL_PATTERN = ACTIVE_INDEXES;
+		const ROW_PATTERNS = Array.from({ length: 5 }, (_, row) =>
+			activePattern(Array.from({ length: 5 }, (_, column) => row * 5 + column)),
+		);
+		const COLUMN_PATTERNS = Array.from({ length: 5 }, (_, column) =>
+			activePattern(Array.from({ length: 5 }, (_, row) => row * 5 + column)),
+		);
+		const DIAGONAL_PATTERNS = [
+			activePattern([0, 6, 12, 18, 24]),
+			activePattern([4, 8, 12, 16, 20]),
+		];
+		const BINGO_TYPES = {
+			full: {
+				label: 'Cartilla completa',
+				winLabel: 'Bingo completo',
+				patterns: [FULL_PATTERN],
+			},
+			line: {
+				label: 'Linea',
+				winLabel: 'Bingo en linea',
+				patterns: [...ROW_PATTERNS, ...COLUMN_PATTERNS, ...DIAGONAL_PATTERNS],
+			},
+			t: {
+				label: 'Letra T',
+				winLabel: 'Bingo T',
+				patterns: [activePattern([0, 1, 2, 3, 4, 7, 12, 17, 22])],
+			},
+			n: {
+				label: 'Letra N',
+				winLabel: 'Bingo N',
+				patterns: [activePattern([0, 5, 10, 15, 20, 6, 12, 18, 4, 9, 14, 19, 24])],
+			},
+			x: {
+				label: 'Letra X',
+				winLabel: 'Bingo X',
+				patterns: [activePattern([0, 6, 12, 18, 24, 4, 8, 16, 20])],
+			},
+			corners: {
+				label: 'Cuatro esquinas',
+				winLabel: 'Bingo en esquinas',
+				patterns: [[0, 4, 20, 24]],
+			},
+			frame: {
+				label: 'Marco',
+				winLabel: 'Bingo marco',
+				patterns: [[0, 1, 2, 3, 4, 5, 9, 10, 14, 15, 19, 20, 21, 22, 23, 24]],
+			},
+		};
+
+		const summary = document.querySelector('#summary');
+		const cardForm = document.querySelector('#card-form');
+		const formTitle = document.querySelector('#form-title');
+		const saveCardButton = document.querySelector('#save-card');
+		const clearFormButton = document.querySelector('#clear-form');
+		const randomCardButton = document.querySelector('#random-card');
+		const cardIdInput = document.querySelector('#card-id');
+		const cardOwnerInput = document.querySelector('#card-owner');
+		const numbersGrid = document.querySelector('#numbers-grid');
+		const formError = document.querySelector('#form-error');
+		const drawForm = document.querySelector('#draw-form');
+		const drawNumberInput = document.querySelector('#draw-number');
+		const drawError = document.querySelector('#draw-error');
+		const drawnList = document.querySelector('#drawn-list');
+		const lastDrawn = document.querySelector('#last-drawn');
+		const undoDrawButton = document.querySelector('#undo-draw');
+		const clearDrawsButton = document.querySelector('#clear-draws');
+		const cardsGrid = document.querySelector('#cards-grid');
+		const cardsEmpty = document.querySelector('#cards-empty');
+		const cardsSubtitle = document.querySelector('#cards-subtitle');
+		const cardSearch = document.querySelector('#card-search');
+		const bingoTypeSelect = document.querySelector('#bingo-type');
+		const bingoTypeLabel = document.querySelector('#bingo-type-label');
+		const bingoTypeRequirement = document.querySelector('#bingo-type-requirement');
+		const patternPreview = document.querySelector('#pattern-preview');
+		const toastRegion = document.querySelector('#toast-region');
+
+		let editingCardId = null;
+		let state = loadState();
+		let hasRendered = false;
+		let previousWinningKeys = new Set();
+
+		function loadState() {
+			try {
+				const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+				return {
+					cards: Array.isArray(saved.cards) ? saved.cards.map(normalizeCard) : [],
+					drawnNumbers: Array.isArray(saved.drawnNumbers) ? saved.drawnNumbers : [],
+					bingoType: BINGO_TYPES[saved.bingoType] ? saved.bingoType : 'full',
+				};
+			} catch {
+				return { cards: [], drawnNumbers: [], bingoType: 'full' };
+			}
+		}
+
+		function saveState() {
+			localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+		}
+
+		function normalizeCard(card) {
+			const sourceNumbers = Array.isArray(card.numbers) ? [...card.numbers] : [];
+			if (sourceNumbers.length === ACTIVE_CARD_SIZE) {
+				sourceNumbers.splice(CENTER_INDEX, 0, null);
+			}
+
+			const numbers = ALL_INDEXES.map((index) =>
+				index === CENTER_INDEX ? null : normalizeNumber(sourceNumbers[index]),
+			);
+
+			return {
+				...card,
+				id: String(card.id ?? ''),
+				owner: String(card.owner ?? ''),
+				numbers,
+			};
+		}
+
+		function escapeHtml(value) {
+			return String(value).replace(/[&<>"']/g, (character) => {
+				const entities = {
+					'&': '&amp;',
+					'<': '&lt;',
+					'>': '&gt;',
+					'"': '&quot;',
+					"'": '&#039;',
+				};
+				return entities[character];
+			});
+		}
+
+		function controlCardId(id) {
+			return id.trim() || 'ID cartilla';
+		}
+
+		function controlCellMarkup(id, className = '') {
+			return `
+				<div class="bingo-control-cell ${className}" aria-label="Casilla central de control">
+					<span>CONTROL</span>
+					<strong data-control-id>${escapeHtml(controlCardId(id))}</strong>
+				</div>
+			`;
+		}
+
+		function updateControlPreview() {
+			const controlId = numbersGrid.querySelector('[data-control-id]');
+			if (!controlId) return;
+			controlId.textContent = controlCardId(cardIdInput.value);
+		}
+
+		function renderNumberInputs(values = []) {
+			numbersGrid.innerHTML = Array.from({ length: CARD_SIZE }, (_, index) => {
+				const column = CARD_COLUMNS[index % CARD_COLUMNS.length];
+				const row = Math.floor(index / CARD_COLUMNS.length) + 1;
+				if (index === CENTER_INDEX) {
+					return `
+						<div>
+							<span class="sr-only">${column}${row}</span>
+							${controlCellMarkup(cardIdInput.value, 'is-form-cell')}
+						</div>
+					`;
+				}
+
+				const value = values[index] ?? '';
+				return `
+					<label>
+						<span class="sr-only">${column}${row}</span>
+						<input
+							class="bingo-number-input"
+							data-number-index="${index}"
+							inputmode="numeric"
+							min="1"
+							max="75"
+							type="number"
+							value="${value}"
+						/>
+					</label>
+				`;
+			}).join('');
+		}
+
+		function readCardNumbers() {
+			return ALL_INDEXES.map((index) => {
+				if (index === CENTER_INDEX) return '';
+				return numbersGrid.querySelector(`[data-number-index="${index}"]`)?.value.trim() ?? '';
+			});
+		}
+
+		function setFormError(message) {
+			formError.textContent = message;
+			formError.classList.toggle('hidden', !message);
+		}
+
+		function setDrawError(message) {
+			drawError.textContent = message;
+			drawError.classList.toggle('hidden', !message);
+		}
+
+		function normalizeNumber(value) {
+			const number = Number(value);
+			return Number.isInteger(number) && number >= 1 && number <= 75 ? number : null;
+		}
+
+		function resetCardForm() {
+			editingCardId = null;
+			cardForm.reset();
+			renderNumberInputs();
+			formTitle.textContent = 'Nueva cartilla';
+			saveCardButton.textContent = 'Guardar cartilla';
+			setFormError('');
+		}
+
+		function randomCardNumbers() {
+			const available = Array.from({ length: 75 }, (_, index) => index + 1);
+			for (let index = available.length - 1; index > 0; index -= 1) {
+				const swapIndex = Math.floor(Math.random() * (index + 1));
+				[available[index], available[swapIndex]] = [available[swapIndex], available[index]];
+			}
+			const selectedNumbers = available.slice(0, ACTIVE_CARD_SIZE);
+			let selectedIndex = 0;
+			return ALL_INDEXES.map((index) =>
+				index === CENTER_INDEX ? null : selectedNumbers[selectedIndex++],
+			);
+		}
+
+		function uniquePattern(pattern) {
+			return [...new Set(pattern)];
+		}
+
+		function currentBingoTypeKey() {
+			return BINGO_TYPES[state.bingoType] ? state.bingoType : 'full';
+		}
+
+		function currentBingoType() {
+			return BINGO_TYPES[currentBingoTypeKey()];
+		}
+
+		function patternProgress(card, drawnSet, pattern) {
+			const indexes = uniquePattern(pattern).filter((index) => index !== CENTER_INDEX);
+			const matched = indexes.filter((index) => drawnSet.has(card.numbers[index])).length;
+			return {
+				indexes,
+				matched,
+				required: indexes.length,
+				isComplete: matched === indexes.length,
+			};
+		}
+
+		function cardStatus(card, drawnSet) {
+			const type = currentBingoType();
+			const patternResults = type.patterns
+				.map((pattern) => patternProgress(card, drawnSet, pattern))
+				.sort((first, second) => second.matched - first.matched);
+			const winningPattern = patternResults.find((pattern) => pattern.isComplete);
+			const bestPattern = winningPattern ?? patternResults[0];
+
+			return {
+				isBingo: Boolean(winningPattern),
+				label: winningPattern ? type.winLabel : `${bestPattern.matched}/${bestPattern.required}`,
+				marked: ACTIVE_INDEXES.filter((index) => drawnSet.has(card.numbers[index])).length,
+				patternIndexes: bestPattern.indexes,
+				typeLabel: type.label,
+				winLabel: type.winLabel,
+			};
+		}
+
+		function winningEntries(drawnSet) {
+			return state.cards
+				.map((card) => ({ card, status: cardStatus(card, drawnSet) }))
+				.filter((entry) => entry.status.isBingo);
+		}
+
+		function winnerKey(card) {
+			return `${currentBingoTypeKey()}::${card.id}`;
+		}
+
+		function renderBingoType() {
+			const typeKey = currentBingoTypeKey();
+			const type = currentBingoType();
+			const previewIndexes = new Set(uniquePattern(type.patterns[0]));
+
+			bingoTypeSelect.value = typeKey;
+			bingoTypeLabel.textContent = type.label;
+			bingoTypeRequirement.textContent = `${previewIndexes.size} casillas`;
+			patternPreview.innerHTML = ALL_INDEXES.map((index) => {
+				const isDisabled = index === CENTER_INDEX;
+				const isActive = previewIndexes.has(index);
+				const classes = isDisabled
+					? 'border-slate-200 bg-slate-100'
+					: isActive
+						? 'border-emerald-600 bg-emerald-600'
+						: 'border-slate-200 bg-slate-50';
+				return `
+					<div class="aspect-square rounded-sm border ${classes}"></div>
+				`;
+			}).join('');
+		}
+
+		function renderSummary() {
+			const drawnSet = new Set(state.drawnNumbers);
+			const winners = winningEntries(drawnSet).length;
+			const items = [
+				['Cartillas', state.cards.length],
+				['Cantados', state.drawnNumbers.length],
+				['Bingos', winners],
+			];
+
+			summary.innerHTML = items
+				.map(
+					([label, value]) => `
+						<div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-center">
+							<p class="text-xl font-black text-slate-950">${value}</p>
+							<p class="text-xs font-bold uppercase tracking-wide text-slate-500">${label}</p>
+						</div>
+					`,
+				)
+				.join('');
+		}
+
+		function renderDrawnNumbers() {
+			lastDrawn.textContent = state.drawnNumbers.at(-1) ?? '-';
+			undoDrawButton.disabled = state.drawnNumbers.length === 0;
+			clearDrawsButton.disabled = state.drawnNumbers.length === 0;
+
+			if (state.drawnNumbers.length === 0) {
+				drawnList.innerHTML = '<p class="text-sm font-medium text-slate-500">Sin números cantados</p>';
+				return;
+			}
+
+			drawnList.innerHTML = state.drawnNumbers
+				.map(
+					(number) => `
+						<button class="rounded-md border border-slate-200 bg-slate-950 px-3 py-1.5 text-sm font-black text-white transition hover:bg-slate-800" type="button" data-remove-drawn="${number}">
+							${number}
+						</button>
+					`,
+				)
+				.join('');
+		}
+
+		function visiblePatternIndexes(status) {
+			if (currentBingoTypeKey() === 'line' && !status.isBingo) return new Set();
+			if (currentBingoTypeKey() === 'full') return new Set();
+			return new Set(status.patternIndexes);
+		}
+
+		function consideredPatternIndexes() {
+			if (currentBingoTypeKey() === 'full') return new Set(ACTIVE_INDEXES);
+
+			return new Set(
+				currentBingoType()
+					.patterns.flatMap((pattern) => uniquePattern(pattern))
+					.filter((index) => index !== CENTER_INDEX),
+			);
+		}
+
+		function renderCards() {
+			const query = cardSearch.value.trim().toLowerCase();
+			const drawnSet = new Set(state.drawnNumbers);
+			const lastNumber = state.drawnNumbers.at(-1);
+			const consideredIndexes = consideredPatternIndexes();
+			const filteredCards = state.cards.filter((card) => {
+				const content = `${card.id} ${card.owner}`.toLowerCase();
+				return content.includes(query);
+			});
+
+			cardsSubtitle.textContent = `${filteredCards.length} de ${state.cards.length} · ${currentBingoType().label}`;
+			cardsEmpty.classList.toggle('hidden', state.cards.length !== 0);
+			cardsGrid.classList.toggle('hidden', state.cards.length === 0);
+
+			cardsGrid.innerHTML = filteredCards
+				.map((card) => {
+					const status = cardStatus(card, drawnSet);
+					const patternIndexes = visiblePatternIndexes(status);
+					const cells = card.numbers
+						.map((number, index) => {
+							const isDisabled = index === CENTER_INDEX;
+							const marked = drawnSet.has(number);
+							const isLast = number === lastNumber;
+							const isPattern = patternIndexes.has(index);
+							const isExcluded = !isDisabled && marked && !consideredIndexes.has(index);
+							const classes = ['bingo-cell'];
+							if (isDisabled) classes.push('is-disabled');
+							if (isExcluded) classes.push('is-excluded');
+							if (isPattern) classes.push('is-pattern');
+							if (!isDisabled && !isExcluded && marked) classes.push('is-marked');
+							if (!isDisabled && isLast) classes.push('is-last');
+							if (isDisabled) {
+								return controlCellMarkup(card.id, 'is-card-cell');
+							}
+							return `<div class="${classes.join(' ')}">${number}</div>`;
+						})
+						.join('');
+
+					return `
+						<article class="rounded-lg border ${status.isBingo ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white'} p-4 shadow-sm">
+							<div class="mb-3 flex items-start justify-between gap-3">
+								<div class="min-w-0">
+									<h3 class="truncate text-lg font-black text-slate-950">${escapeHtml(card.id)}</h3>
+									<p class="truncate text-sm font-semibold text-slate-500">${escapeHtml(card.owner)}</p>
+								</div>
+								<span class="shrink-0 rounded-md ${status.isBingo ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'} px-3 py-1 text-sm font-black">
+									${escapeHtml(status.label)}
+								</span>
+							</div>
+
+							<div class="mb-2 grid grid-cols-5 gap-2 text-center text-xs font-black text-slate-500">
+								${CARD_COLUMNS.map((column) => `<span>${column}</span>`).join('')}
+							</div>
+							<div class="grid grid-cols-5 gap-2">${cells}</div>
+
+							<div class="mt-4 grid grid-cols-2 gap-2">
+								<button class="bingo-button bingo-button-secondary" type="button" data-action="edit" data-card-id="${escapeHtml(card.id)}">
+									Editar
+								</button>
+								<button class="bingo-button bingo-button-danger" type="button" data-action="delete" data-card-id="${escapeHtml(card.id)}">
+									Eliminar
+								</button>
+							</div>
+						</article>
+					`;
+				})
+				.join('');
+
+			if (state.cards.length > 0 && filteredCards.length === 0) {
+				cardsGrid.innerHTML = `
+					<div class="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+						<p class="text-lg font-black text-slate-900">Sin resultados</p>
+					</div>
+				`;
+				cardsGrid.classList.remove('hidden');
+			}
+		}
+
+		function showToast(card, status) {
+			const toast = document.createElement('div');
+			toast.className =
+				'pointer-events-auto rounded-lg border border-emerald-300 bg-white p-4 text-slate-950 shadow-lg transition duration-300';
+			toast.setAttribute('role', 'status');
+			toast.innerHTML = `
+				<div class="flex items-start gap-3">
+					<div class="grid size-9 shrink-0 place-items-center rounded-md bg-emerald-600 text-sm font-black text-white">B</div>
+					<div class="min-w-0">
+						<p class="font-black">¡${escapeHtml(status.winLabel)}!</p>
+						<p class="mt-0.5 text-sm font-semibold text-slate-600">
+							${escapeHtml(card.id)} · ${escapeHtml(card.owner)}
+						</p>
+					</div>
+				</div>
+			`;
+
+			toastRegion.append(toast);
+			window.setTimeout(() => {
+				toast.classList.add('translate-y-1', 'opacity-0');
+				window.setTimeout(() => toast.remove(), 300);
+			}, 4500);
+		}
+
+		function syncWinnerNotifications() {
+			const drawnSet = new Set(state.drawnNumbers);
+			const winners = winningEntries(drawnSet);
+			const currentWinningKeys = new Set(winners.map(({ card }) => winnerKey(card)));
+
+			if (hasRendered) {
+				winners.forEach(({ card, status }) => {
+					if (!previousWinningKeys.has(winnerKey(card))) {
+						showToast(card, status);
+					}
+				});
+			}
+
+			previousWinningKeys = currentWinningKeys;
+			hasRendered = true;
+		}
+
+		function render() {
+			renderBingoType();
+			renderSummary();
+			renderDrawnNumbers();
+			renderCards();
+			syncWinnerNotifications();
+		}
+
+		cardForm.addEventListener('submit', (event) => {
+			event.preventDefault();
+			setFormError('');
+
+			const id = cardIdInput.value.trim();
+			const owner = cardOwnerInput.value.trim();
+			const rawNumbers = readCardNumbers();
+			const numbers = rawNumbers.map(normalizeNumber);
+			numbers[CENTER_INDEX] = null;
+			const activeNumbers = ACTIVE_INDEXES.map((index) => numbers[index]);
+
+			if (!id) {
+				setFormError('Agrega el ID de la cartilla.');
+				cardIdInput.focus();
+				return;
+			}
+
+			if (!owner) {
+				setFormError('Agrega el dueño de la cartilla.');
+				cardOwnerInput.focus();
+				return;
+			}
+
+			if (activeNumbers.some((number) => number === null)) {
+				setFormError('Completa las 24 casillas activas con números del 1 al 75.');
+				return;
+			}
+
+			const uniqueNumbers = new Set(activeNumbers);
+			if (uniqueNumbers.size !== ACTIVE_CARD_SIZE) {
+				setFormError('La cartilla tiene números repetidos.');
+				return;
+			}
+
+			const normalizedId = id.toLowerCase();
+			const idExists = state.cards.some(
+				(card) => card.id.toLowerCase() === normalizedId && card.id !== editingCardId,
+			);
+			if (idExists) {
+				setFormError('Ese ID de cartilla ya existe.');
+				cardIdInput.focus();
+				return;
+			}
+
+			const nextCard = {
+				id,
+				owner,
+				numbers,
+				createdAt: Date.now(),
+			};
+
+			if (editingCardId) {
+				state.cards = state.cards.map((card) => (card.id === editingCardId ? nextCard : card));
+			} else {
+				state.cards = [nextCard, ...state.cards];
+			}
+
+			saveState();
+			resetCardForm();
+			render();
+		});
+
+		drawForm.addEventListener('submit', (event) => {
+			event.preventDefault();
+			setDrawError('');
+
+			const number = normalizeNumber(drawNumberInput.value.trim());
+			if (number === null) {
+				setDrawError('Ingresa un número del 1 al 75.');
+				drawNumberInput.focus();
+				return;
+			}
+
+			if (state.drawnNumbers.includes(number)) {
+				setDrawError('Ese número ya fue cantado.');
+				drawNumberInput.select();
+				return;
+			}
+
+			state.drawnNumbers = [...state.drawnNumbers, number];
+			drawNumberInput.value = '';
+			saveState();
+			render();
+			drawNumberInput.focus();
+		});
+
+		clearFormButton.addEventListener('click', resetCardForm);
+
+		randomCardButton.addEventListener('click', () => {
+			renderNumberInputs(randomCardNumbers());
+			setFormError('');
+		});
+
+		cardIdInput.addEventListener('input', updateControlPreview);
+
+		undoDrawButton.addEventListener('click', () => {
+			state.drawnNumbers = state.drawnNumbers.slice(0, -1);
+			saveState();
+			setDrawError('');
+			render();
+		});
+
+		clearDrawsButton.addEventListener('click', () => {
+			if (state.drawnNumbers.length === 0) return;
+			const shouldClear = window.confirm('¿Reiniciar los números cantados?');
+			if (!shouldClear) return;
+
+			state.drawnNumbers = [];
+			saveState();
+			setDrawError('');
+			render();
+		});
+
+		drawnList.addEventListener('click', (event) => {
+			const button = event.target.closest('[data-remove-drawn]');
+			if (!button) return;
+
+			const number = Number(button.dataset.removeDrawn);
+			state.drawnNumbers = state.drawnNumbers.filter((drawnNumber) => drawnNumber !== number);
+			saveState();
+			setDrawError('');
+			render();
+		});
+
+		cardsGrid.addEventListener('click', (event) => {
+			const button = event.target.closest('[data-action]');
+			if (!button) return;
+
+			const action = button.dataset.action;
+			const cardId = button.dataset.cardId;
+			const card = state.cards.find((item) => item.id === cardId);
+			if (!card) return;
+
+			if (action === 'edit') {
+				editingCardId = card.id;
+				cardIdInput.value = card.id;
+				cardOwnerInput.value = card.owner;
+				renderNumberInputs(card.numbers);
+				formTitle.textContent = 'Editar cartilla';
+				saveCardButton.textContent = 'Guardar cambios';
+				setFormError('');
+				cardIdInput.focus();
+				window.scrollTo({ top: 0, behavior: 'smooth' });
+			}
+
+			if (action === 'delete') {
+				state.cards = state.cards.filter((item) => item.id !== card.id);
+				if (editingCardId === card.id) resetCardForm();
+				saveState();
+				render();
+			}
+		});
+
+		numbersGrid.addEventListener('paste', (event) => {
+			const text = event.clipboardData?.getData('text') || '';
+			const pastedNumbers = text.match(/\d+/g);
+			if (!pastedNumbers || pastedNumbers.length <= 1) return;
+
+			event.preventDefault();
+			const inputs = Array.from(numbersGrid.querySelectorAll('input:not([disabled])'));
+			const startIndex = inputs.indexOf(event.target);
+			if (startIndex === -1) return;
+			pastedNumbers.slice(0, ACTIVE_CARD_SIZE - startIndex).forEach((number, index) => {
+				inputs[startIndex + index].value = number;
+			});
+		});
+
+		bingoTypeSelect.addEventListener('change', () => {
+			state.bingoType = BINGO_TYPES[bingoTypeSelect.value] ? bingoTypeSelect.value : 'full';
+			hasRendered = false;
+			saveState();
+			render();
+		});
+
+		cardSearch.addEventListener('input', renderCards);
+
+		renderNumberInputs();
+		render();
+	</script>
 </Layout>
