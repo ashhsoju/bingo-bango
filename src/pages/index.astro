@@ -9,6 +9,7 @@ import {
 	RotateCcw,
 	Save,
 	Scissors,
+	Shuffle,
 	Square,
 	Trash2,
 	Upload,
@@ -52,6 +53,11 @@ import {
 					</form>
 
 					<p id="draw-error" class="mt-3 hidden rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700"></p>
+
+					<button id="random-draw" class="bingo-button bingo-button-secondary mt-3 w-full" type="button">
+						<Shuffle size={16} aria-hidden="true" />
+						<span>Cantar aleatorio</span>
+					</button>
 
 					<div class="mt-4 grid grid-cols-2 gap-2">
 						<button id="undo-draw" class="bingo-button bingo-button-secondary" type="button">Deshacer</button>
@@ -392,6 +398,7 @@ import {
 		const drawError = document.querySelector('#draw-error');
 		const drawnList = document.querySelector('#drawn-list');
 		const lastDrawn = document.querySelector('#last-drawn');
+		const randomDrawButton = document.querySelector('#random-draw');
 		const undoDrawButton = document.querySelector('#undo-draw');
 		const clearDrawsButton = document.querySelector('#clear-draws');
 		const cardsGrid = document.querySelector('#cards-grid');
@@ -665,6 +672,37 @@ import {
 			return ALL_INDEXES.map((index) =>
 				index === CENTER_INDEX ? null : selectedNumbers[selectedIndex++],
 			);
+		}
+
+		function availableDrawNumbers() {
+			const drawnSet = new Set(state.drawnNumbers);
+			return Array.from({ length: 75 }, (_, index) => index + 1).filter(
+				(number) => !drawnSet.has(number),
+			);
+		}
+
+		function addDrawnNumber(number, { focusInput = true } = {}) {
+			setDrawError('');
+			if (number === null) {
+				setDrawError('Ingresa un número del 1 al 75.');
+				drawNumberInput.focus();
+				return false;
+			}
+
+			if (state.drawnNumbers.includes(number)) {
+				setDrawError('Ese número ya fue cantado.');
+				drawNumberInput.select();
+				return false;
+			}
+
+			state.drawnNumbers = [...state.drawnNumbers, number];
+			drawNumberInput.value = '';
+			saveState();
+			render();
+			if (focusInput) {
+				drawNumberInput.focus();
+			}
+			return true;
 		}
 
 		function uniquePattern(pattern) {
@@ -1398,6 +1436,7 @@ import {
 
 		function renderDrawnNumbers() {
 			lastDrawn.textContent = state.drawnNumbers.at(-1) ?? '-';
+			randomDrawButton.disabled = state.drawnNumbers.length >= 75;
 			undoDrawButton.disabled = state.drawnNumbers.length === 0;
 			clearDrawsButton.disabled = state.drawnNumbers.length === 0;
 
@@ -1625,26 +1664,8 @@ import {
 
 		drawForm.addEventListener('submit', (event) => {
 			event.preventDefault();
-			setDrawError('');
-
 			const number = normalizeNumber(drawNumberInput.value.trim());
-			if (number === null) {
-				setDrawError('Ingresa un número del 1 al 75.');
-				drawNumberInput.focus();
-				return;
-			}
-
-			if (state.drawnNumbers.includes(number)) {
-				setDrawError('Ese número ya fue cantado.');
-				drawNumberInput.select();
-				return;
-			}
-
-			state.drawnNumbers = [...state.drawnNumbers, number];
-			drawNumberInput.value = '';
-			saveState();
-			render();
-			drawNumberInput.focus();
+			addDrawnNumber(number);
 		});
 
 		clearFormButton.addEventListener('click', resetCardForm);
@@ -1655,6 +1676,17 @@ import {
 		});
 
 		cardIdInput.addEventListener('input', updateControlPreview);
+
+		randomDrawButton.addEventListener('click', () => {
+			const availableNumbers = availableDrawNumbers();
+			if (availableNumbers.length === 0) {
+				setDrawError('Ya fueron cantados todos los números.');
+				return;
+			}
+
+			const nextNumber = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+			addDrawnNumber(nextNumber, { focusInput: false });
+		});
 
 		undoDrawButton.addEventListener('click', () => {
 			state.drawnNumbers = state.drawnNumbers.slice(0, -1);
